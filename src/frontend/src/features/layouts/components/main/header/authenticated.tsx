@@ -1,4 +1,4 @@
-import { DropdownMenu, HeaderProps, Icon, useResponsive, UserMenu, VerticalSeparator } from "@gouvfr-lasuite/ui-kit";
+import { DropdownMenu, HeaderProps, Icon, useResponsive, UserMenu } from "@gouvfr-lasuite/ui-kit";
 import { Controls, GearRounded, Upload } from "@gouvfr-lasuite/ui-kit/icons";
 import { Button, Tooltip, useCunningham } from "@gouvfr-lasuite/cunningham-react";
 import { useMemo, useState } from "react";
@@ -9,8 +9,8 @@ import useAbility, { Abilities } from "@/hooks/use-ability";
 import { useFeatureFlag, FEATURE_KEYS } from "@/hooks/use-feature";
 import { useAuth, logout } from "@/features/auth";
 import { LanguagePicker } from "@/features/layouts/components/main/language-picker";
-import { LagaufreButton } from "@/features/ui/components/lagaufre";
 import { SurveyButton } from "@/features/ui/components/feedback-button";
+import { AppSwitcherButton } from "@/features/ui/components/app-switcher-panel";
 import { useMailboxContext } from "@/features/providers/mailbox";
 import { ImportRun, MessageTemplateTypeChoices, useMailboxesImportsList, useMailboxesMessageTemplatesList } from "@/features/api/gen";
 import { isTerminal } from "@/hooks/import-status";
@@ -187,7 +187,6 @@ const ImportIndicator = () => {
 
 export const HeaderRight = () => {
   const { user } = useAuth();
-  const { isDesktop } = useResponsive();
   const { themeConfig } = useTheme();
 
   return (
@@ -197,8 +196,7 @@ export const HeaderRight = () => {
         <AutoreplyIndicator />
         <SurveyButton iconOnly color="brand" variant="tertiary" />
         <ApplicationMenu />
-        {isDesktop && <VerticalSeparator size="24px" withPadding={false} />}
-        <LagaufreButton />
+        <AppSwitcherButton />
       </div>
       <UserMenu
         user={user ? {
