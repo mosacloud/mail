@@ -110,13 +110,11 @@ export const HeaderRight = () => {
   const { themeConfig } = useTheme();
 
   return (
-    <>
-      <div className="flex-row flex-align-center">
-        <AutoreplyIndicator />
-        <SurveyButton iconOnly color="brand" variant="tertiary" />
-        <ApplicationMenu />
-        <AppSwitcherButton />
-      </div>
+    <div className="header__actions">
+      <AutoreplyIndicator />
+      <SurveyButton iconOnly color="brand" variant="tertiary" />
+      <ApplicationMenu />
+      <AppSwitcherButton />
       <UserMenu
         user={user ? {
           full_name: user.full_name ?? undefined,
@@ -130,7 +128,7 @@ export const HeaderRight = () => {
           </div>
         }
       />
-    </>
+    </div>
   );
 };
 
