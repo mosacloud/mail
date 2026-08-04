@@ -179,6 +179,7 @@ export const MosaLoginPage = () => {
 
           <MobileHeader>
             <img src='/logos/mosa-cloud-logo.svg' alt='mosa.cloud' />
+            <LanguageSelector />
           </MobileHeader>
 
           <FormContainer>
