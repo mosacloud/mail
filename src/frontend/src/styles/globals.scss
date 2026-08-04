@@ -172,7 +172,8 @@ body {
   contain: content;
 }
 
-.c__button:disabled {
+.c__button:disabled,
+.c__button--disabled {
   cursor: not-allowed;
 }
 
