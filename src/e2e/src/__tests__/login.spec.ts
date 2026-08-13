@@ -88,7 +88,7 @@ test.describe('Silent Login', () => {
 
     // The login page is eventually shown because Keycloak returns a
     // "login_failed" error when not running behind HTTPS
-    await expect(page.locator('button.pro-connect-button')).toBeVisible({
+    await expect(page.getByTestId('login-button')).toBeVisible({
       timeout: 30000,
     });
 
@@ -120,7 +120,7 @@ test.describe('Silent Login', () => {
 
     // Verify the ProConnect login button is shown (silent login failed,
     // retry key prevents re-attempt, login page displayed)
-    await expect(page.locator('button.pro-connect-button')).toBeVisible({
+    await expect(page.getByTestId('login-button')).toBeVisible({
       timeout: 30000,
     });
 
@@ -155,7 +155,7 @@ test.describe('Silent Login', () => {
     await page.goto('/');
 
     // Verify the ProConnect login button is shown directly (no silent login attempt)
-    await expect(page.locator('button.pro-connect-button')).toBeVisible({
+    await expect(page.getByTestId('login-button')).toBeVisible({
       timeout: 10000,
     });
 

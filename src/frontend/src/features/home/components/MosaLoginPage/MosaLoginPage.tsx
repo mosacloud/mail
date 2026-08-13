@@ -202,7 +202,7 @@ export const MosaLoginPage = ({ next }: MosaLoginPageProps) => {
             <Divider />
 
             <Actions>
-              <PrimaryButton onClick={handleLogin}>
+              <PrimaryButton onClick={handleLogin} data-testid='login-button'>
                 <span>{t('Sign in with your account')}</span>
                 <ArrowRight />
               </PrimaryButton>
