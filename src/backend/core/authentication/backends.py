@@ -2,7 +2,8 @@
 
 import logging
 
-from django.core.exceptions import SuspiciousOperation
+from django.core.exceptions import SuspiciousOperation, ValidationError
+from django.core.validators import URLValidator
 
 from lasuite.oidc_login.backends import (
     OIDCAuthenticationBackend as LaSuiteOIDCAuthenticationBackend,
@@ -153,11 +154,33 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
 
     def get_extra_claims(self, user_info):
         """Get extra claims."""
-        picture = user_info.get("picture")
         return {
             "full_name": self.compute_full_name(user_info),
-            "picture": picture if isinstance(picture, str) else None,
+            "picture": self._clean_picture_claim(user_info.get("picture")),
         }
+
+    @staticmethod
+    def _clean_picture_claim(picture):
+        """Return `picture` if it's a valid, length-bounded URL, else None.
+
+        The claim comes from an external OIDC provider and isn't guaranteed
+        to be well-formed. Letting a bad value through would crash the whole
+        login on User.full_clean() (the picture field's URLField validation)
+        instead of just dropping the picture.
+        """
+        if not isinstance(picture, str):
+            return None
+
+        max_length = User._meta.get_field("picture").max_length  # pylint: disable=protected-access
+        if max_length is not None and len(picture) > max_length:
+            return None
+
+        try:
+            URLValidator()(picture)
+        except ValidationError:
+            return None
+
+        return picture
 
     def get_existing_user(self, sub, email):
         """Get an existing user by sub or email."""

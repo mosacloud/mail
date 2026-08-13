@@ -329,6 +329,61 @@ def test_authentication_getter_new_user_with_email(monkeypatch):
     assert models.User.objects.count() == 1
 
 
+@pytest.mark.parametrize(
+    "picture",
+    [
+        None,
+        123,
+        "not a url",
+        "https://example.com/" + "x" * 600,
+    ],
+)
+def test_authentication_get_extra_claims_picture_invalid(picture):
+    """
+    An invalid `picture` claim (missing, wrong type, malformed URL, or longer
+    than the model field allows) should be dropped instead of raised, so a
+    misbehaving OIDC provider can't crash login on User.full_clean().
+    """
+    klass = OIDCAuthenticationBackend()
+
+    claims = klass.get_extra_claims({"picture": picture})
+
+    assert claims["picture"] is None
+
+
+def test_authentication_get_extra_claims_picture_valid():
+    """A well-formed, length-bounded `picture` claim should be kept as-is."""
+    klass = OIDCAuthenticationBackend()
+    picture = "https://example.com/avatar.jpg"
+
+    claims = klass.get_extra_claims({"picture": picture})
+
+    assert claims["picture"] == picture
+
+
+def test_authentication_getter_new_user_with_invalid_picture(monkeypatch):
+    """
+    A new user should still be created when the OIDC provider sends an
+    invalid `picture` claim — the picture is dropped, not the whole login.
+    """
+    klass = OIDCAuthenticationBackend()
+
+    def get_userinfo_mocked(*args):
+        return {
+            "sub": "123",
+            "email": "messages@example.local",
+            "picture": "https://example.com/" + "x" * 600,
+        }
+
+    monkeypatch.setattr(OIDCAuthenticationBackend, "get_userinfo", get_userinfo_mocked)
+
+    user = klass.get_or_create_user(
+        access_token="test-token", id_token=None, payload=None
+    )
+
+    assert user.picture is None
+
+
 def test_authentication_getter_existing_disabled_user_via_email(monkeypatch):
     """
     If an existing user does not match the sub but matches the email and is disabled,
