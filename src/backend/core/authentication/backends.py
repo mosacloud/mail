@@ -153,8 +153,10 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
 
     def get_extra_claims(self, user_info):
         """Get extra claims."""
+        picture = user_info.get("picture")
         return {
             "full_name": self.compute_full_name(user_info),
+            "picture": picture if isinstance(picture, str) else None,
         }
 
     def get_existing_user(self, sub, email):

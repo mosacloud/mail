@@ -179,6 +179,14 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
         "admin email address", unique=True, blank=True, null=True
     )
 
+    picture = models.URLField(
+        "picture",
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Profile picture URL from the OIDC provider, if any.",
+    )
+
     language = models.CharField(
         max_length=10,
         choices=settings.LANGUAGES,

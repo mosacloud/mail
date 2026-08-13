@@ -8,10 +8,10 @@
 import type { ConfigRetrieve200DRIVE } from "./config_retrieve200_driv_e";
 import type { ConfigRetrieve200SCHEMACUSTOMATTRIBUTESUSER } from "./config_retrieve200_schemacustomattributesuse_r";
 import type { ConfigRetrieve200SCHEMACUSTOMATTRIBUTESMAILDOMAIN } from "./config_retrieve200_schemacustomattributesmaildomai_n";
+import type { ConfigRetrieve200APPURLS } from "./config_retrieve200_appurl_s";
 import type { ConfigRetrieve200FRONTENDTHEMECONFIG } from "./config_retrieve200_frontendthemeconfi_g";
 import type { ConfigRetrieve200FRONTENDFEEDBACKWIDGETCONFIG } from "./config_retrieve200_frontendfeedbackwidgetconfi_g";
 import type { ConfigRetrieve200FRONTENDLAGAUFREWIDGETCONFIG } from "./config_retrieve200_frontendlagaufrewidgetconfi_g";
-import type { ConfigRetrieve200APPURLS } from "./config_retrieve200_appurl_s";
 
 export type ConfigRetrieve200 = {
   readonly ENVIRONMENT: string;
