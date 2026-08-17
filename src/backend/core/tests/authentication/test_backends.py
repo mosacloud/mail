@@ -361,6 +361,7 @@ def test_authentication_get_extra_claims_picture_valid():
     assert claims["picture"] == picture
 
 
+@override_settings(OIDC_CREATE_USER=True)
 def test_authentication_getter_new_user_with_invalid_picture(monkeypatch):
     """
     A new user should still be created when the OIDC provider sends an

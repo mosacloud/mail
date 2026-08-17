@@ -171,7 +171,7 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
         if not isinstance(picture, str):
             return None
 
-        max_length = User._meta.get_field("picture").max_length  # pylint: disable=protected-access
+        max_length = User.picture.field.max_length
         if max_length is not None and len(picture) > max_length:
             return None
 
