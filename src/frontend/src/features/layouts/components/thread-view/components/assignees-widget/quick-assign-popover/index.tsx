@@ -1,4 +1,4 @@
-import { Icon, IconSize, IconType, Spinner, UserAvatar } from "@gouvfr-lasuite/ui-kit";
+import { Icon, IconSize, IconType, Spinner } from "@gouvfr-lasuite/ui-kit";
 import {
     Autocomplete,
     Dialog,
@@ -19,6 +19,7 @@ import {
 } from "@/features/api/gen";
 import { useAuth } from "@/features/auth";
 import { useThreadAssignment } from "@/features/message/use-thread-assignment";
+import { PictureAvatar } from "@/features/ui/components/picture-avatar";
 import { StringHelper } from "@/features/utils/string-helper";
 
 type QuickAssignPopoverProps = {
@@ -267,8 +268,9 @@ export const QuickAssignPopover = ({
                                         className="quick-assign-popover__row"
                                     >
                                         <span aria-hidden="true">
-                                            <UserAvatar
+                                            <PictureAvatar
                                                 fullName={user.full_name || user.email || ""}
+                                                picture={user.picture}
                                                 size="xsmall"
                                             />
                                         </span>

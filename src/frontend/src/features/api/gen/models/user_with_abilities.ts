@@ -19,6 +19,11 @@ export interface UserWithAbilities {
   readonly email: string | null;
   /** @nullable */
   readonly full_name: string | null;
+  /**
+   * Profile picture URL from the OIDC provider, if any.
+   * @nullable
+   */
+  readonly picture: string | null;
   /** Get custom attributes for the instance. */
   readonly custom_attributes: UserWithAbilitiesCustomAttributes;
   /** Return the session-bound CSRF token for the SPA to echo as X-CSRFToken.

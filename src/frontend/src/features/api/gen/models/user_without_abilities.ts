@@ -18,6 +18,11 @@ export interface UserWithoutAbilities {
   readonly email: string | null;
   /** @nullable */
   readonly full_name: string | null;
+  /**
+   * Profile picture URL from the OIDC provider, if any.
+   * @nullable
+   */
+  readonly picture: string | null;
   /** Get custom attributes for the instance. */
   readonly custom_attributes: UserWithoutAbilitiesCustomAttributes;
 }

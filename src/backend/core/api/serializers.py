@@ -290,7 +290,7 @@ class UserSerializer(AbilitiesModelSerializer):
 
     class Meta:
         model = models.User
-        fields = ["id", "email", "full_name", "custom_attributes"]
+        fields = ["id", "email", "full_name", "picture", "custom_attributes"]
         read_only_fields = fields
 
     @extend_schema_field(

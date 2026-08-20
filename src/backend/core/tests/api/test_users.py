@@ -45,6 +45,7 @@ class TestUsersGetMe:
             "id": str(user.id),
             "email": user.email,
             "full_name": user.full_name,
+            "picture": user.picture,
             "custom_attributes": user.custom_attributes,
             "abilities": {
                 "create_maildomains": False,
@@ -599,6 +600,7 @@ class TestAdminUsersList:
                 "id",
                 "email",
                 "full_name",
+                "picture",
                 "custom_attributes",
             }
 

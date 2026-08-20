@@ -2,7 +2,8 @@
 
 import logging
 
-from django.core.exceptions import SuspiciousOperation
+from django.core.exceptions import SuspiciousOperation, ValidationError
+from django.core.validators import URLValidator
 
 from lasuite.oidc_login.backends import (
     OIDCAuthenticationBackend as LaSuiteOIDCAuthenticationBackend,
@@ -83,6 +84,27 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
         self.post_get_or_create_user(user, claims, _user_created)
         return user
 
+    # Claims that must be cleared on the user once the IdP stops sending them,
+    # rather than left stale (the base `update_user_if_needed` only ever applies
+    # truthy claim values, so a claim that becomes None is otherwise ignored).
+    NULLABLE_CLAIM_FIELDS = ("picture",)
+
+    def update_user_if_needed(self, user, claims):
+        """Update user claims, additionally clearing stale nullable claims."""
+        super().update_user_if_needed(user, claims)
+
+        stale_fields = [
+            field
+            for field in self.NULLABLE_CLAIM_FIELDS
+            if field in claims
+            and claims[field] is None
+            and getattr(user, field, None) is not None
+        ]
+        if stale_fields:
+            for field in stale_fields:
+                setattr(user, field, None)
+            user.save(update_fields=stale_fields)
+
     def post_get_or_create_user(self, user, claims, _user_created):
         """Post-get or create user."""
         if user:
@@ -155,7 +177,33 @@ class OIDCAuthenticationBackend(LaSuiteOIDCAuthenticationBackend):
         """Get extra claims."""
         return {
             "full_name": self.compute_full_name(user_info),
+            "picture": self._clean_picture_claim(user_info.get("picture")),
         }
+
+    @staticmethod
+    def _clean_picture_claim(picture):
+        """Return `picture` if it's a valid, length-bounded URL, else None.
+
+        The claim comes from an external OIDC provider and isn't guaranteed
+        to be well-formed. Letting a bad value through would crash the whole
+        login on User.full_clean() (the picture field's URLField validation)
+        instead of just dropping the picture.
+        """
+        if not isinstance(picture, str):
+            return None
+
+        max_length = User._meta.get_field(  # noqa: SLF001  pylint: disable=protected-access
+            "picture"
+        ).max_length
+        if max_length is not None and len(picture) > max_length:
+            return None
+
+        try:
+            URLValidator(schemes=["http", "https"])(picture)
+        except ValidationError:
+            return None
+
+        return picture
 
     def get_existing_user(self, sub, email):
         """Get an existing user by sub or email."""

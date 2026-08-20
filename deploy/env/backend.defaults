@@ -65,7 +65,7 @@ OIDC_OP_LOGOUT_ENDPOINT=http://localhost:8902/realms/messages/protocol/openid-co
 OIDC_RP_CLIENT_ID=messages
 OIDC_RP_CLIENT_SECRET=ThisIsAnExampleKeyForDevPurposeOnly
 OIDC_RP_SIGN_ALGO=RS256
-OIDC_RP_SCOPES="openid email"
+OIDC_RP_SCOPES="openid email profile"
 
 LOGIN_REDIRECT_URL=http://localhost:8900
 LOGIN_REDIRECT_URL_FAILURE=http://localhost:8900

@@ -7,7 +7,8 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/features/auth";
 import { useMailboxContext, TimelineItem } from "@/features/providers/mailbox";
 import { Badge } from "@/features/ui/components/badge";
-import { AVATAR_COLORS, Icon, IconSize, IconType, UserAvatar } from "@gouvfr-lasuite/ui-kit";
+import { PictureAvatar } from "@/features/ui/components/picture-avatar";
+import { AVATAR_COLORS, Icon, IconSize, IconType } from "@gouvfr-lasuite/ui-kit";
 import { Button, useModals } from "@gouvfr-lasuite/cunningham-react";
 import useCopyDeepLink from "@/features/message/use-copy-deep-link";
 import clsx from "clsx";
@@ -261,7 +262,11 @@ export const ThreadEvent = ({ event, isCondensed = false, onEdit, onDelete, ment
                     {!isCondensed && (
                         <div className="thread-event__header">
                             <span className="thread-event__author">
-                                <UserAvatar fullName={authorName} size="xsmall" />
+                                <PictureAvatar
+                                    fullName={authorName}
+                                    picture={event.author?.picture}
+                                    size="xsmall"
+                                />
                                 {authorName}
                             </span>
                             <span className="thread-event__time">

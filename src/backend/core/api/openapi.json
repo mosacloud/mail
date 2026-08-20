@@ -11182,6 +11182,13 @@
                         "readOnly": true,
                         "nullable": true
                     },
+                    "picture": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Profile picture URL from the OIDC provider, if any."
+                    },
                     "custom_attributes": {
                         "type": "object",
                         "additionalProperties": {},
@@ -11198,7 +11205,8 @@
                     "custom_attributes",
                     "email",
                     "full_name",
-                    "id"
+                    "id",
+                    "picture"
                 ]
             },
             "ThreadSplitRequestRequest": {
@@ -11298,6 +11306,13 @@
                         "readOnly": true,
                         "nullable": true
                     },
+                    "picture": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Profile picture URL from the OIDC provider, if any."
+                    },
                     "custom_attributes": {
                         "type": "object",
                         "additionalProperties": {},
@@ -11340,7 +11355,8 @@
                     "custom_attributes",
                     "email",
                     "full_name",
-                    "id"
+                    "id",
+                    "picture"
                 ]
             },
             "UserWithoutAbilities": {
@@ -11365,6 +11381,13 @@
                         "readOnly": true,
                         "nullable": true
                     },
+                    "picture": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Profile picture URL from the OIDC provider, if any."
+                    },
                     "custom_attributes": {
                         "type": "object",
                         "additionalProperties": {},
@@ -11376,7 +11399,8 @@
                     "custom_attributes",
                     "email",
                     "full_name",
-                    "id"
+                    "id",
+                    "picture"
                 ]
             },
             "WebPushKeysRequest": {

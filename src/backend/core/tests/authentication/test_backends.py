@@ -329,6 +329,108 @@ def test_authentication_getter_new_user_with_email(monkeypatch):
     assert models.User.objects.count() == 1
 
 
+@pytest.mark.parametrize(
+    "picture",
+    [
+        None,
+        123,
+        "not a url",
+        "https://example.com/" + "x" * 600,
+        "ftp://example.com/avatar.jpg",
+    ],
+)
+def test_authentication_get_extra_claims_picture_invalid(picture):
+    """
+    An invalid `picture` claim (missing, wrong type, malformed URL, non-http(s)
+    scheme, or longer than the model field allows) should be dropped instead
+    of raised, so a misbehaving OIDC provider can't crash login on
+    User.full_clean().
+    """
+    klass = OIDCAuthenticationBackend()
+
+    claims = klass.get_extra_claims({"picture": picture})
+
+    assert claims["picture"] is None
+
+
+def test_authentication_get_extra_claims_picture_valid():
+    """A well-formed, length-bounded `picture` claim should be kept as-is."""
+    klass = OIDCAuthenticationBackend()
+    picture = "https://example.com/avatar.jpg"
+
+    claims = klass.get_extra_claims({"picture": picture})
+
+    assert claims["picture"] == picture
+
+
+@override_settings(OIDC_CREATE_USER=True)
+def test_authentication_getter_new_user_with_invalid_picture(monkeypatch):
+    """
+    A new user should still be created when the OIDC provider sends an
+    invalid `picture` claim — the picture is dropped, not the whole login.
+    """
+    klass = OIDCAuthenticationBackend()
+
+    def get_userinfo_mocked(*args):
+        return {
+            "sub": "123",
+            "email": "messages@example.local",
+            "picture": "https://example.com/" + "x" * 600,
+        }
+
+    monkeypatch.setattr(OIDCAuthenticationBackend, "get_userinfo", get_userinfo_mocked)
+
+    user = klass.get_or_create_user(
+        access_token="test-token", id_token=None, payload=None
+    )
+
+    assert user.picture is None
+
+
+def test_authentication_getter_existing_user_picture_cleared_when_claim_disappears(
+    monkeypatch,
+):
+    """
+    A previously stored picture should be cleared once the IdP stops sending
+    it, instead of being left stale forever.
+    """
+    klass = OIDCAuthenticationBackend()
+    user = UserFactory(picture="https://example.com/old-pic.png")
+
+    def get_userinfo_mocked(*args):
+        return {"sub": user.sub, "email": user.email}
+
+    monkeypatch.setattr(OIDCAuthenticationBackend, "get_userinfo", get_userinfo_mocked)
+
+    authenticated_user = klass.get_or_create_user(
+        access_token="test-token", id_token=None, payload=None
+    )
+
+    assert user == authenticated_user
+    user.refresh_from_db()
+    assert user.picture is None
+
+
+def test_authentication_getter_existing_user_picture_kept_when_unchanged(monkeypatch):
+    """No update should happen when the picture claim hasn't changed."""
+    klass = OIDCAuthenticationBackend()
+    picture = "https://example.com/pic.png"
+    user = UserFactory(picture=picture)
+
+    def get_userinfo_mocked(*args):
+        return {"sub": user.sub, "email": user.email, "picture": picture}
+
+    monkeypatch.setattr(OIDCAuthenticationBackend, "get_userinfo", get_userinfo_mocked)
+
+    authenticated_user = klass.get_or_create_user(
+        access_token="test-token", id_token=None, payload=None
+    )
+
+    assert user == authenticated_user
+    user.refresh_from_db()
+    assert user.picture == picture
+
+
 def test_authentication_getter_existing_disabled_user_via_email(monkeypatch):
     """
     If an existing user does not match the sub but matches the email and is disabled,

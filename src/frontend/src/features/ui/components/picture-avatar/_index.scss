@@ -1,0 +1,14 @@
+.picture-avatar {
+    display: inline-flex;
+
+    .c__avatar {
+        background-image: var(--picture-avatar-url);
+        background-size: cover;
+        background-position: center;
+        border-color: transparent;
+
+        .c__avatar__initials {
+            visibility: hidden;
+        }
+    }
+}

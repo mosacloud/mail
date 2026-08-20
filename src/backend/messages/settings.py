@@ -1199,7 +1199,7 @@ class Base(Configuration):
         environ_prefix=None,
     )
     OIDC_RP_SCOPES = values.Value(
-        "openid email", environ_name="OIDC_RP_SCOPES", environ_prefix=None
+        "openid email profile", environ_name="OIDC_RP_SCOPES", environ_prefix=None
     )
     OIDC_AUTHENTICATE_CLASS = "core.authentication.views.OIDCAuthenticationRequestView"
     OIDC_CALLBACK_CLASS = "core.authentication.views.OIDCAuthenticationCallbackView"
