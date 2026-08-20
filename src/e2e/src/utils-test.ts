@@ -51,7 +51,7 @@ export const signInKeycloakIfNeeded = async ({ page, username, navigateTo = "/" 
     const storageStatePath = getStorageStatePath(username);
 
     const proConnectButton = page.getByTestId('login-button');
-    proConnectButton.click();
+    await proConnectButton.click();
 
     await page.waitForURL(`${AUTHENTICATION_URL}/realms/messages/protocol/openid-connect/auth**`);
     const attemptedUsernameInput = page.locator('input[id="kc-attempted-username"]');
