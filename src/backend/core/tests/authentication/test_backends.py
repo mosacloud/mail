@@ -336,13 +336,15 @@ def test_authentication_getter_new_user_with_email(monkeypatch):
         123,
         "not a url",
         "https://example.com/" + "x" * 600,
+        "ftp://example.com/avatar.jpg",
     ],
 )
 def test_authentication_get_extra_claims_picture_invalid(picture):
     """
-    An invalid `picture` claim (missing, wrong type, malformed URL, or longer
-    than the model field allows) should be dropped instead of raised, so a
-    misbehaving OIDC provider can't crash login on User.full_clean().
+    An invalid `picture` claim (missing, wrong type, malformed URL, non-http(s)
+    scheme, or longer than the model field allows) should be dropped instead
+    of raised, so a misbehaving OIDC provider can't crash login on
+    User.full_clean().
     """
     klass = OIDCAuthenticationBackend()
 
@@ -383,6 +385,50 @@ def test_authentication_getter_new_user_with_invalid_picture(monkeypatch):
     )
 
     assert user.picture is None
+
+
+def test_authentication_getter_existing_user_picture_cleared_when_claim_disappears(
+    monkeypatch,
+):
+    """
+    A previously stored picture should be cleared once the IdP stops sending
+    it, instead of being left stale forever.
+    """
+    klass = OIDCAuthenticationBackend()
+    user = UserFactory(picture="https://example.com/old-pic.png")
+
+    def get_userinfo_mocked(*args):
+        return {"sub": user.sub, "email": user.email}
+
+    monkeypatch.setattr(OIDCAuthenticationBackend, "get_userinfo", get_userinfo_mocked)
+
+    authenticated_user = klass.get_or_create_user(
+        access_token="test-token", id_token=None, payload=None
+    )
+
+    assert user == authenticated_user
+    user.refresh_from_db()
+    assert user.picture is None
+
+
+def test_authentication_getter_existing_user_picture_kept_when_unchanged(monkeypatch):
+    """No update should happen when the picture claim hasn't changed."""
+    klass = OIDCAuthenticationBackend()
+    picture = "https://example.com/pic.png"
+    user = UserFactory(picture=picture)
+
+    def get_userinfo_mocked(*args):
+        return {"sub": user.sub, "email": user.email, "picture": picture}
+
+    monkeypatch.setattr(OIDCAuthenticationBackend, "get_userinfo", get_userinfo_mocked)
+
+    authenticated_user = klass.get_or_create_user(
+        access_token="test-token", id_token=None, payload=None
+    )
+
+    assert user == authenticated_user
+    user.refresh_from_db()
+    assert user.picture == picture
 
 
 def test_authentication_getter_existing_disabled_user_via_email(monkeypatch):
