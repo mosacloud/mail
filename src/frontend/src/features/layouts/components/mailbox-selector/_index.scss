@@ -82,6 +82,23 @@
     }
 }
 
+// Same OIDC profile picture as the header UserMenu (see
+// header/authenticated.tsx's useProfilePictureVar), applied here only to the
+// entry that is actually the logged-in user's own mailbox.
+html[data-has-profile-picture] {
+    .mailbox-selector__avatar[data-own-mailbox="true"] .c__avatar,
+    .mailbox-selector__option-avatar[data-own-mailbox="true"] .c__avatar {
+        background-image: var(--user-profile-picture-url);
+        background-size: cover;
+        background-position: center;
+        border-color: transparent;
+
+        .c__avatar__initials {
+            visibility: hidden;
+        }
+    }
+}
+
 // The dropdown caps its width at 320px, so a long mailbox name would otherwise
 // wrap onto several lines. Truncate it with an ellipsis instead. Scoped to our
 // items (which carry the avatar hook) since the popover lives in a portal.

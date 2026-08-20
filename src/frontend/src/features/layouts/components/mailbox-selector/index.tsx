@@ -5,10 +5,18 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Mailbox } from "@/features/api/gen";
 import MailboxHelper from "@/features/utils/mailbox-helper";
+import { useAuth } from "@/features/auth";
 
 /** Display name of a mailbox, falling back to its address when no contact name
  * is set (a mailbox may legitimately have a null/blank name). */
 const getMailboxLabel = (mailbox: Mailbox) => mailbox.name?.trim() || mailbox.email;
+
+/** Whether `mailbox` is the logged-in user's own identity (eligible to show
+ * their OIDC profile picture), not a shared mailbox or another identity they
+ * have access to. Emails are compared case-insensitively since IdPs aren't
+ * guaranteed to return a claim in the exact casing stored on the mailbox. */
+const isOwnMailbox = (mailbox: Mailbox, userEmail?: string | null) =>
+  mailbox.is_identity && !!userEmail && mailbox.email.toLowerCase() === userEmail.toLowerCase();
 
 type MailboxSelectorProps = {
   /** Mailboxes the user can switch to (already the eligible subset). */
@@ -32,6 +40,7 @@ export const MailboxSelector = ({
   onSelect,
 }: MailboxSelectorProps) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   const label = getMailboxLabel(selectedMailbox);
@@ -45,6 +54,7 @@ export const MailboxSelector = ({
       <span
         className="mailbox-selector__avatar"
         data-shared={!selectedMailbox.is_identity}
+        data-own-mailbox={isOwnMailbox(selectedMailbox, user?.email)}
         aria-hidden="true"
       >
         <UserAvatar fullName={label} size="small" />
@@ -90,6 +100,7 @@ export const MailboxSelector = ({
         <span
           className="mailbox-selector__option-avatar"
           data-shared={!mailbox.is_identity}
+          data-own-mailbox={isOwnMailbox(mailbox, user?.email)}
         >
           <UserAvatar fullName={getMailboxLabel(mailbox)} size="small" />
         </span>
