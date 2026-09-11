@@ -156,6 +156,7 @@ class SubmitRawEmailView(APIView):
                 raw_data=raw_mime,
                 mailbox=mailbox,
                 is_outbound=True,
+                channel=request.auth,
             )
             if not message:
                 # Roll back so any partial writes from the failed creation
