@@ -43,8 +43,11 @@ name: Build and Push Container Image
         description: Optional version tag to apply to the image.
     outputs:
       image_ref:
-        description: "registry/name@sha256:digest of the published multi-arch image (for downstream `FROM`)."
+        description: "registry/name@sha256:digest of the published multi-arch image. NOTE: GitHub suppresses this output when it contains a secret substring (e.g. a DOCKER_HUB_USER equal to the org name in the image path), which blanks it for consumers. For a downstream `FROM`, prefer `digest` and rebuild the ref from `github.repository`."
         value: ${{ jobs.docker-build-push.outputs.image_ref }}
+      digest:
+        description: "sha256:… digest of the published multi-arch manifest. Never contains a secret substring, so it is safe to consume across jobs; assemble the full ref as `<registry>/<github.repository>-<name>@<digest>`."
+        value: ${{ jobs.docker-build-push.outputs.digest }}
     secrets:
       DOCKER_HUB_USER:
         required: true
@@ -56,6 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image_ref: "${{ inputs.registry }}/${{ github.repository }}-${{ inputs.image_name }}@${{ steps.create-manifest.outputs.digest }}"
+      digest: ${{ steps.create-manifest.outputs.digest }}
     permissions:
       contents: read
       # attest-build-provenance needs an OIDC token (id-token) and the

@@ -55,7 +55,7 @@ jobs:
       target: runtime-prod
       version: ${{ needs.get-version.outputs.backend_version }}
       build_args: |
-        PYTHON_UV_IMAGE=${{ needs.docker-publish-python-uv.outputs.image_ref }}
+        PYTHON_UV_IMAGE=docker.io/${{ github.repository }}-python-uv@${{ needs.docker-publish-python-uv.outputs.digest }}
 
   # Pure-Python (aiosmtpd) inbound MTA — built from Dockerfile.pymta, published
   # alongside the Postfix mta-in image while the two run side-by-side.
@@ -74,7 +74,7 @@ jobs:
       target: runtime-prod
       version: ${{ needs.get-version.outputs.backend_version }}
       build_args: |
-        PYTHON_UV_IMAGE=${{ needs.docker-publish-python-uv.outputs.image_ref }}
+        PYTHON_UV_IMAGE=docker.io/${{ github.repository }}-python-uv@${{ needs.docker-publish-python-uv.outputs.digest }}
 
   docker-publish-mta-out:
     needs: [get-version, docker-publish-python-uv]
@@ -90,7 +90,7 @@ jobs:
       target: runtime-prod
       version: ${{ needs.get-version.outputs.backend_version }}
       build_args: |
-        PYTHON_UV_IMAGE=${{ needs.docker-publish-python-uv.outputs.image_ref }}
+        PYTHON_UV_IMAGE=docker.io/${{ github.repository }}-python-uv@${{ needs.docker-publish-python-uv.outputs.digest }}
 
   docker-publish-socks-proxy:
     needs: get-version
@@ -140,7 +140,7 @@ jobs:
       target: runtime-prod
       version: ${{ needs.get-version.outputs.backend_version }}
       build_args: |
-        PYTHON_UV_IMAGE=${{ needs.docker-publish-python-uv.outputs.image_ref }}
+        PYTHON_UV_IMAGE=docker.io/${{ github.repository }}-python-uv@${{ needs.docker-publish-python-uv.outputs.digest }}
 
   docker-publish-keycloak:
     needs: get-version
