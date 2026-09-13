@@ -34,6 +34,7 @@ from core.mda.dispatch_webhooks import (
     _dispatch_webhook,
     _HttpResult,
     build_jmap_email,
+    dispatch_sent_webhooks,
     dispatch_webhook_task,
     find_webhook_channels_for_mailbox,
     load_cached_webhook_results,
@@ -482,14 +483,37 @@ class TestDispatchInboundWebhooks:
         self, mock_session, mailbox, parsed_email
     ):
         """A channel whose trigger isn't a known WebhookTrigger fails closed
-        — it builds no step and never fires (e.g. a not-yet-supported event
-        like ``message.sent``)."""
+        — it builds no step and never fires (e.g. a future event this code
+        doesn't know yet)."""
         factories.ChannelFactory(
             type=enums.ChannelTypes.WEBHOOK,
             mailbox=mailbox,
             settings={
                 "url": "https://hook.example.com",
-                "trigger": "message.sent",
+                "trigger": "message.not-a-real-event",
+                "auth_method": "jwt",
+            },
+        )
+        outcome = dispatch_webhooks(
+            phase=PHASE_AFTER_SPAM,
+            mailbox=mailbox,
+            recipient_email=str(mailbox),
+            parsed_email=parsed_email,
+            raw_data=b"",
+        )
+        assert outcome.decision == Decision.CONTINUE
+        mock_session.assert_not_called()
+
+    @patch("core.mda.dispatch_webhooks.SSRFSafeSession")
+    def test_skips_outbound_trigger(self, mock_session, mailbox, parsed_email):
+        """A message.sent channel is a known but outbound trigger: the
+        inbound pipeline never fires it."""
+        factories.ChannelFactory(
+            type=enums.ChannelTypes.WEBHOOK,
+            mailbox=mailbox,
+            settings={
+                "url": "https://hook.example.com",
+                "trigger": enums.WebhookTrigger.MESSAGE_SENT.value,
                 "auth_method": "jwt",
             },
         )
@@ -1787,6 +1811,111 @@ class TestNonBlockingDispatch:
         # Transport failure — swallowed, no raise.
         mock_session.return_value.post.side_effect = SSRFValidationError("blocked")
         dispatch_webhook_task(*args)
+
+
+# --- outbound (message.sent) --- #
+
+
+@pytest.mark.django_db
+class TestSentWebhooks:
+    """message.sent is dispatched from the send path, scoped to the sending
+    mailbox, and never fires from the inbound pipeline."""
+
+    _SENT = enums.WebhookTrigger.MESSAGE_SENT.value
+
+    @patch("core.mda.dispatch_webhooks.dispatch_webhook_task")
+    def test_enqueues_for_sent_channel(self, mock_task, mailbox):
+        channel = factories.ChannelFactory(
+            type=enums.ChannelTypes.WEBHOOK,
+            mailbox=mailbox,
+            settings={
+                "url": "https://hook.example.com",
+                "trigger": self._SENT,
+                "auth_method": "jwt",
+            },
+        )
+        message = factories.MessageFactory(raw_mime=b"raw mime")
+        dispatch_sent_webhooks(message, mailbox)
+        mock_task.delay.assert_called_once_with(
+            str(message.id),
+            str(channel.id),
+            str(mailbox.id),
+            False,
+            enums.WebhookTrigger.MESSAGE_SENT,
+        )
+
+    @patch("core.mda.dispatch_webhooks.dispatch_webhook_task")
+    def test_ignores_delivered_channel(self, mock_task, mailbox):
+        factories.ChannelFactory(
+            type=enums.ChannelTypes.WEBHOOK,
+            mailbox=mailbox,
+            settings={
+                "url": "https://hook.example.com",
+                "trigger": "message.delivered",
+                "auth_method": "jwt",
+            },
+        )
+        dispatch_sent_webhooks(factories.MessageFactory(raw_mime=b"raw"), mailbox)
+        mock_task.delay.assert_not_called()
+
+    @patch("core.mda.dispatch_webhooks.SSRFSafeSession")
+    def test_task_posts_with_sent_trigger(self, mock_session, mailbox):
+        channel = factories.ChannelFactory(
+            type=enums.ChannelTypes.WEBHOOK,
+            mailbox=mailbox,
+            settings={
+                "url": "https://hook.example.com",
+                "trigger": self._SENT,
+                "auth_method": "jwt",
+            },
+        )
+        mock_session.return_value.post.return_value = _make_response(200)
+        thread = factories.ThreadFactory()
+        factories.ThreadAccessFactory(
+            mailbox=mailbox,
+            thread=thread,
+            role=enums.ThreadAccessRoleChoices.EDITOR,
+        )
+        message = factories.MessageFactory(thread=thread, raw_mime=b"sent mime")
+        dispatch_webhook_task(
+            str(message.id),
+            str(channel.id),
+            str(mailbox.id),
+            False,
+            enums.WebhookTrigger.MESSAGE_SENT,
+        )
+        mock_session.return_value.post.assert_called_once()
+        headers = mock_session.return_value.post.call_args.kwargs["headers"]
+        assert headers["X-StMsg-Trigger"] == "message.sent"
+
+    @patch("core.mda.dispatch_webhooks.SSRFSafeSession")
+    def test_task_skips_on_trigger_mismatch(self, mock_session, mailbox):
+        # expected_trigger=message.sent but the channel is message.delivered
+        # (e.g. retyped between enqueue and run) → skip, no POST.
+        channel = factories.ChannelFactory(
+            type=enums.ChannelTypes.WEBHOOK,
+            mailbox=mailbox,
+            settings={
+                "url": "https://hook.example.com",
+                "trigger": "message.delivered",
+                "auth_method": "jwt",
+            },
+        )
+        thread = factories.ThreadFactory()
+        factories.ThreadAccessFactory(
+            mailbox=mailbox,
+            thread=thread,
+            role=enums.ThreadAccessRoleChoices.EDITOR,
+        )
+        message = factories.MessageFactory(thread=thread, raw_mime=b"raw mime")
+        dispatch_webhook_task(
+            str(message.id),
+            str(channel.id),
+            str(mailbox.id),
+            False,
+            enums.WebhookTrigger.MESSAGE_SENT,
+        )
+        mock_session.return_value.post.assert_not_called()
 
 
 # --- internal (mailbox-to-mailbox) delivery --- #
