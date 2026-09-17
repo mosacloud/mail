@@ -21,6 +21,7 @@ so invalid combinations can't be expressed:
 | `message.inbound`     | The message just arrived, before the spam check   | yes (sync)  | pending |
 | `message.delivering`  | After the spam verdict, while delivery is in flight | yes (sync) | known  |
 | `message.delivered`   | After the message has landed in the mailbox       | no (async)  | final   |
+| `message.sent`        | After a message is finalised as sent from the mailbox | no (async) | n/a |
 
 Future lifecycle events (e.g. `message.sent`) are added as new
 `trigger` values.
@@ -78,7 +79,7 @@ A webhook channel stores its configuration in `Channel.settings`
 | Key           | Type     | Default        | Description                                                                 |
 | ------------- | -------- | -------------- | --------------------------------------------------------------------------- |
 | `url`         | string   | **required**   | `https://` endpoint. **Rejected at create/update** if it resolves to an internal address or doesn't resolve, and re-validated by the SSRF guard (with IP pinning) at each call. `http://` is accepted only when Django `DEBUG` is on (the local-dev escape hatch). |
-| `trigger`     | string   | **required**   | `message.inbound`, `message.delivering`, or `message.delivered` (see [When does it fire?](#when-does-it-fire)). |
+| `trigger`     | string   | **required**   | `message.inbound`, `message.delivering`, `message.delivered`, or `message.sent` (see [When does it fire?](#when-does-it-fire)). |
 | `format`      | string   | `eml`          | `eml`, `jmap`, or `jmap_metadata` (see [Payload formats](#payload-formats)). |
 | `auth_method` | string   | **required**   | `jwt` or `api_key` (see [Authentication](#authentication)).                 |
 
@@ -153,7 +154,7 @@ message lands.
 | Header                | Value                                                            |
 | --------------------- | ---------------------------------------------------------------- |
 | `Content-Type`        | `message/rfc822` for `eml`, `application/json` for both JMAP variants |
-| `X-StMsg-Trigger`     | The lifecycle event that fired (`message.inbound` / `message.delivering` / `message.delivered`). Route on this — it says what happened and, implicitly, whether the webhook blocked. |
+| `X-StMsg-Trigger`     | The lifecycle event that fired (`message.inbound` / `message.delivering` / `message.delivered` / `message.sent`). Route on this — it says what happened and, implicitly, whether the webhook blocked. |
 | `X-StMsg-Instance`    | Public base URL of the originating instance (e.g. `https://messages-public-url.example.com`). **Only present when the instance sets `INSTANCE_URL`.** Combine with the `*-Id` headers to build callback API URLs. |
 | `X-StMsg-Channel-Id`  | UUID of the firing webhook Channel                               |
 | `X-StMsg-Mailbox`     | Destination mailbox address                                      |

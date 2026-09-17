@@ -92,6 +92,16 @@ PHASE_BEFORE_SPAM = "before_spam"
 PHASE_AFTER_SPAM = "after_spam"
 VALID_PHASES = frozenset({PHASE_BEFORE_SPAM, PHASE_AFTER_SPAM})
 
+# Triggers handled by the inbound pipeline. Outbound ones (message.sent)
+# are dispatched from the send path, not here.
+INBOUND_TRIGGERS = frozenset(
+    {
+        enums.WebhookTrigger.MESSAGE_INBOUND,
+        enums.WebhookTrigger.MESSAGE_DELIVERING,
+        enums.WebhookTrigger.MESSAGE_DELIVERED,
+    }
+)
+
 
 @dataclass
 class _HttpResult:  # pylint: disable=too-many-instance-attributes
@@ -1080,12 +1090,39 @@ def dispatch_recorded_webhooks(
         dispatch_webhook_task.delay(message_id, str(channel_id), mailbox_id, is_spam)
 
 
+def dispatch_sent_webhooks(message: models.Message, mailbox: models.Mailbox) -> None:
+    """Fire ``message.sent`` webhooks for an outbound message just finalised.
+
+    Mirrors ``dispatch_recorded_webhooks`` but for the sending mailbox and
+    the ``message.sent`` trigger; ``is_spam`` is ``False`` (outbound is not
+    spam-checked).
+    """
+    channels = [
+        c
+        for c in find_webhook_channels_for_mailbox(mailbox)
+        if (c.settings or {}).get("trigger") == enums.WebhookTrigger.MESSAGE_SENT
+    ]
+    if not channels:
+        return
+    message_id = str(message.id)
+    mailbox_id = str(mailbox.id)
+    for channel in channels:
+        dispatch_webhook_task.delay(
+            message_id,
+            str(channel.id),
+            mailbox_id,
+            False,
+            enums.WebhookTrigger.MESSAGE_SENT,
+        )
+
+
 @celery_app.task
 def dispatch_webhook_task(
     message_id: str,
     channel_id: str,
     mailbox_id: str,
     is_spam: Optional[bool],
+    expected_trigger: str = enums.WebhookTrigger.MESSAGE_DELIVERED,
 ) -> None:
     """Deliver one non-blocking webhook off the inbound worker.
 
@@ -1115,10 +1152,7 @@ def dispatch_webhook_task(
         # mailbox, so channel membership subsumes the type + mailbox checks.
         applicable = {c.id for c in find_webhook_channels_for_mailbox(mailbox)}
         trigger = (channel.settings or {}).get("trigger")
-        if (
-            channel.id not in applicable
-            or trigger != enums.WebhookTrigger.MESSAGE_DELIVERED
-        ):
+        if channel.id not in applicable or trigger != expected_trigger:
             logger.warning(
                 "Webhook channel %s no longer applies to mailbox %s "
                 "(trigger=%r) — skipping dispatch",
@@ -1202,6 +1236,10 @@ def webhook_steps_for_mailbox(
                 channel.id,
                 trigger,
             )
+            continue
+        if trigger not in INBOUND_TRIGGERS:
+            # Known outbound trigger (message.sent) — dispatched from the
+            # send path, not the inbound pipeline.
             continue
         # Only message.inbound fires before the spam check (docs/webhooks.md).
         runs_at = (

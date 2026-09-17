@@ -502,6 +502,12 @@ def _finalize_sent_message(
 
     message.thread.update_stats()
 
+    from core.mda.dispatch_webhooks import dispatch_sent_webhooks
+
+    transaction.on_commit(
+        lambda: dispatch_sent_webhooks(message, mailbox_sender)
+    )
+
 
 def send_message(message: models.Message, force_mta_out: bool = False):
     """Send an existing Message, internally or externally.

@@ -346,13 +346,17 @@ class WebhookTrigger(StrEnum):
       - ``MESSAGE_DELIVERED`` — the message has landed in the mailbox.
         Asynchronous (fire-and-forget): a notification that can't influence
         delivery, always reflecting the final spam verdict.
+      - ``MESSAGE_SENT`` — a message was sent from the mailbox (outbound
+        finalised, not a delivery confirmation). Asynchronous
+        (fire-and-forget).
 
-    Future lifecycle events (e.g. ``message.sent``) are added here.
+    Future lifecycle events are added here.
     """
 
     MESSAGE_INBOUND = "message.inbound"
     MESSAGE_DELIVERING = "message.delivering"
     MESSAGE_DELIVERED = "message.delivered"
+    MESSAGE_SENT = "message.sent"
 
 
 class WebhookAuthMethod(StrEnum):
