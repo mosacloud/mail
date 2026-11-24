@@ -47,6 +47,8 @@
     "@capacitor/push-notifications": "8.1.2",
     "@capacitor/share": "8.0.2",
     "@capgo/capacitor-updater": "8.51.23",
+    "@fontsource/open-sans": "5.2.7",
+    "@fontsource/poppins": "5.2.7",
     "@gouvfr-lasuite/drive-sdk": "0.0.2",
     "@gouvfr-lasuite/ui-components": "1.2.0",
     "@hookform/resolvers": "5.2.2",
