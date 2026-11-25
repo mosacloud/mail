@@ -1,14 +1,5 @@
 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M30 24C30 25.6569 28.6569 27 27 27H5C3.34315 27 2 25.6569 2 24V10L14.3777 17.9571C15.3659 18.5924 16.6341 18.5924 17.6223 17.9571L30 10V24Z" fill="url(#paint0_linear_838_313)"/>
-<path d="M28.0595 5C29.1312 5 30 5.86879 30 6.9405C30 7.60078 29.6643 8.21576 29.1088 8.57281L17.6223 15.9571C16.6341 16.5924 15.3659 16.5924 14.3777 15.9571L2.89115 8.57281C2.33574 8.21576 2 7.60078 2 6.9405C2 5.86879 2.86879 5 3.9405 5H28.0595Z" fill="url(#paint1_linear_838_313)"/>
-<defs>
-<linearGradient id="paint0_linear_838_313" x1="2.6665" y1="5.33325" x2="23.5517" y2="31.0318" gradientUnits="userSpaceOnUse">
-<stop stop-color="#E90553"/>
-<stop offset="1" stop-color="#AB043D"/>
-</linearGradient>
-<linearGradient id="paint1_linear_838_313" x1="2.6665" y1="5.33325" x2="23.5517" y2="31.0318" gradientUnits="userSpaceOnUse">
-<stop stop-color="#E90553"/>
-<stop offset="1" stop-color="#AB043D"/>
-</linearGradient>
-</defs>
+<title>Mosa Mail | favicon</title>
+<defs><linearGradient id="g" gradientUnits="userSpaceOnUse" x1="7.9688" y1="7.9687" x2="88.0313" y2="88.0313"><stop offset="0" stop-color="#F8497B"/><stop offset="1" stop-color="#A0033A"/></linearGradient></defs>
+<g transform="translate(-0.8 -0.8) scale(0.35)" fill="url(#g)"><path d="M88 69C88 73.4183 84.4183 77 80 77H16C11.5817 77 8 73.4183 8 69V29.875L43.7146 52.5314C46.3305 54.1909 49.6695 54.1909 52.2854 52.5314L88 29.875V69Z"/><path d="M83.3222 19C85.9057 19 88 21.0943 88 23.6778C88 25.2795 87.1805 26.7699 85.828 27.6279L52.2854 48.9064C49.6695 50.5659 46.3305 50.5659 43.7146 48.9064L10.172 27.6279C8.81949 26.7699 8 25.2795 8 23.6778C8 21.0943 10.0943 19 12.6778 19H83.3222Z"/></g>
 </svg>
