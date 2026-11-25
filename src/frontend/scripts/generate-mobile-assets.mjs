@@ -75,6 +75,10 @@ const COLORS = {
 const SCALE = {
   icon: 0.62,
   iconTile: 0.5,
+  // Chrome on Android shows only the middle two thirds of a maskable icon, in
+  // the launcher's mask: the mark must sit inside the 66dp safe circle of the
+  // 108dp layer, i.e. the same ~49dp the adaptive icon uses.
+  iconMaskable: 0.45,
   iconForeground: 0.68,
   splash: 0.16,
 };
@@ -389,6 +393,26 @@ log("Re-encoding the PWA icons as actual WebP…");
     const path = join(root, "public", icon.src);
     await write(path, await sharp(readFileSync(path)).webp({ quality: 90 }).toBuffer());
     icon.type = "image/webp";
+    // One image cannot be both: at the `any` size the mark would be clipped by
+    // the launcher mask, at the maskable size it would look lost elsewhere.
+    icon.purpose = "any";
+  }
+
+  for (const size of [192, 512]) {
+    const src = `assets/icons/icon-maskable-${size}.webp`;
+    await write(
+      join(root, "public", src),
+      await sharp(
+        await compose(mark, {
+          size,
+          scale: SCALE.iconMaskable,
+          background: COLORS.iconBackground,
+        }),
+      )
+        .webp({ quality: 90 })
+        .toBuffer(),
+    );
+    manifest.icons.push({ src, type: "image/webp", sizes: `${size}x${size}`, purpose: "maskable" });
   }
 
   // capacitor-assets also rewrites background_color from the CLI flag, which
