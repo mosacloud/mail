@@ -53,7 +53,8 @@ const resDir = join(root, "android/app/src/main/res");
 // by the Android 12+ system splash, which draws its background itself. Letting
 // the two drift is what produces a coloured flash at launch.
 const COLORS = {
-  // Brand gradient of the iOS app icon tile (see tileIcon below).
+  // Brand gradient of the iOS app icon tile (see tileIcon below). Keep in sync
+  // with the gradient stops of the theme's app-icon SVG: only its alpha is read.
   iconTileStart: "#F8497B",
   iconTileEnd: "#A0033A",
   iconBackground: "#FFFFFF",
@@ -278,11 +279,12 @@ execFileSync(
 );
 
 // iOS gets the brand tile; everything else keeps the mark on a flat background.
-log("Replacing the iOS app icon with the brand tile…");
-await write(
-  join(root, "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png"),
-  await tileIcon(mark),
-);
+// Not with --skip-sources: that workflow ships hand-authored icons.
+const iosAppIcon = join(root, "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png");
+if (!skipSources && existsSync(iosAppIcon)) {
+  log("Replacing the iOS app icon with the brand tile…");
+  await write(iosAppIcon, await tileIcon(mark));
+}
 
 // Step 3a — adaptive icon layers at the 108dp scale (capacitor-assets emits
 // them at the legacy launcher size, which Android then upscales).
