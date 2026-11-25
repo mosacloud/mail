@@ -23,7 +23,7 @@
 //         whole set with a layer-list built on the Android 12+ icon.
 //
 // Usage: node scripts/generate-mobile-assets.mjs [options]
-//   --theme <name>        theme whose app icon is the mark (default: anct)
+//   --theme <name>        theme whose app icon is the mark (default: white-label)
 //   --icon <path>         override the mark outright (SVG or PNG, transparent)
 //   --icon-dark <path>    same, for the dark variant
 //   --skip-sources        keep the PNGs already in assets/ (hand-authored sources)
@@ -53,6 +53,9 @@ const resDir = join(root, "android/app/src/main/res");
 // by the Android 12+ system splash, which draws its background itself. Letting
 // the two drift is what produces a coloured flash at launch.
 const COLORS = {
+  // Brand gradient of the iOS app icon tile (see tileIcon below).
+  iconTileStart: "#F8497B",
+  iconTileEnd: "#A0033A",
   iconBackground: "#FFFFFF",
   iconBackgroundDark: "#161B28",
   splashBackground: "#FFFFFF",
@@ -71,6 +74,7 @@ const COLORS = {
 //    mark by ~2.2x, so 0.16 here reads as ~35% of the screen width.
 const SCALE = {
   icon: 0.62,
+  iconTile: 0.5,
   iconForeground: 0.68,
   splash: 0.16,
 };
@@ -170,6 +174,37 @@ const compose = async (mark, { size, width = size, height = size, scale, backgro
   return encode(canvas.composite([{ input: resized, gravity: "centre" }]), format).toBuffer();
 };
 
+/**
+ * Opaque iOS app icon: the mark in white on the brand gradient, full bleed. iOS
+ * shows a transparent icon on black and the App Store rejects alpha.
+ *
+ * @param {Buffer} mark trimmed mark, as returned by loadMark
+ * @returns {Promise<Buffer>} opaque PNG
+ */
+const tileIcon = async (mark) => {
+  const gradient = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${ICON_SIZE}" height="${ICON_SIZE}">` +
+      `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">` +
+      `<stop offset="0" stop-color="${COLORS.iconTileStart}"/>` +
+      `<stop offset="1" stop-color="${COLORS.iconTileEnd}"/></linearGradient></defs>` +
+      `<rect width="100%" height="100%" fill="url(#g)"/></svg>`,
+  );
+  const box = Math.round(ICON_SIZE * SCALE.iconTile);
+  const resized = await sharp(mark).resize({ width: box, height: box, fit: "inside" }).toBuffer();
+  const { width, height } = await sharp(resized).metadata();
+  const alpha = await sharp(resized).extractChannel("alpha").toBuffer();
+  const white = await sharp({ create: { width, height, channels: 3, background: "#FFFFFF" } })
+    .joinChannel(alpha)
+    .png()
+    .toBuffer();
+
+  return sharp(gradient)
+    .composite([{ input: white, gravity: "centre" }])
+    .flatten()
+    .png()
+    .toBuffer();
+};
+
 const write = async (path, buffer) => {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, buffer);
@@ -178,15 +213,15 @@ const write = async (path, buffer) => {
 };
 
 // The mark is the theme's own app icon, not a copy of it: re-skinning the app is
-// then a theme change, with no second file to keep in sync. The default is the
-// theme whose mark the published app currently ships, which is not the frontend
-// default (white-label) — changing it here changes the app's identity.
+// then a theme change, with no second file to keep in sync. The default is
+// white-label, the theme the Mosa app ships (upstream defaults to anct, the
+// La Suite mark) — changing it here changes the app's identity.
 //
 // With --skip-sources the mark is not read at all (hand-authored PNG workflow):
 // the transparent foreground becomes the mark, since steps 3a/3b still need one.
 // It has no dark twin, so both variants share it.
 const themeIcon = (variant) =>
-  join(root, "public/images", option("theme", "anct"), `app-icon-${variant}.svg`);
+  join(root, "public/images", option("theme", "white-label"), `app-icon-${variant}.svg`);
 const skipSources = flag("skip-sources");
 const iconPath = skipSources
   ? join(assetsDir, "icon-foreground.png")
@@ -236,6 +271,13 @@ execFileSync(
     "--splashBackgroundColorDark", COLORS.splashBackgroundDark,
   ],
   { cwd: root, stdio: "inherit" },
+);
+
+// iOS gets the brand tile; everything else keeps the mark on a flat background.
+log("Replacing the iOS app icon with the brand tile…");
+await write(
+  join(root, "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png"),
+  await tileIcon(mark),
 );
 
 // Step 3a — adaptive icon layers at the 108dp scale (capacitor-assets emits
