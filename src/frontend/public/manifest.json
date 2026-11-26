@@ -1,6 +1,6 @@
 {
   "name": "Mosa Mail",
-  "short_name": "Mosa Mail",
+  "short_name": "Mail",
   "description": "Manage your mails securely and professionally",
   "start_url": "/",
   "display": "standalone",
