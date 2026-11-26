@@ -5,6 +5,7 @@ import {
   Group,
   Separator,
   useDefaultLayout,
+  type Layout,
 } from "react-resizable-panels";
 import { DropdownMenuOption, LeftPanel, useResponsive } from "@gouvfr-lasuite/ui-components";
 import { useControllableState } from "../hooks/useControllableState";
@@ -48,11 +49,6 @@ export const AppLayout = ({
     props.isLeftPanelOpen,
     props.setIsLeftPanelOpen
   );
-  const { defaultLayout, onLayoutChange } = useDefaultLayout({
-    groupId: "main",
-    storage: localStorage,
-  });
-
   const { isDesktop } = useResponsive();
   // This layout mounts the <Toaster/> the staged-update toast needs.
   useOtaUpdateToast();
@@ -68,6 +64,29 @@ export const AppLayout = ({
   // completely unmount it as it will never be visible.
   const mountLeftPanel = isDesktop ? !hideLeftPanelOnDesktop : true;
   const showLeftPanel = isDesktop ? !hideLeftPanelOnDesktop : isLeftPanelOpen;
+
+  const panelIds = mountLeftPanel ? PANEL_IDS_WITH_LEFT : PANEL_IDS_RIGHT_ONLY;
+  const { defaultLayout, onLayoutChange } = useDefaultLayout({
+    groupId: "main",
+    panelIds,
+    storage: layoutStorage,
+  });
+  const [resetCount, setResetCount] = useState(0);
+  const resetAttempts = useRef(0);
+  const storedLayout = isLayoutPlausible(defaultLayout, panelIds) ? defaultLayout : undefined;
+
+  const handleLayoutChange = (layout: Layout) => {
+    if (!hasPanelOrder(layout, panelIds)) {
+      // DevTools' 1x1px viewport makes the panels register in the wrong order: rebuild the group
+      if (resetAttempts.current < MAX_GROUP_RESETS) {
+        resetAttempts.current += 1;
+        setResetCount((count) => count + 1);
+      }
+      return;
+    }
+    resetAttempts.current = 0;
+    onLayoutChange(layout);
+  };
 
   const [minPanelSize, setMinPanelSize] = useState(
     calculateDefaultSize(200, isDesktop)
@@ -92,7 +111,7 @@ export const AppLayout = ({
     const updatePanelSize = () => {
       const min = Math.round(calculateDefaultSize(250, isDesktop));
       const max = Math.round(
-        Math.min(calculateDefaultSize(450, isDesktop), 40)
+        Math.min(calculateDefaultSize(450, isDesktop), MAX_LEFT_PERCENT)
       );
 
       setMinPanelSize(isDesktop ? min : 0);
@@ -164,7 +183,7 @@ export const AppLayout = ({
         />
       </div>
       <main className="c__main-layout__content">
-        <Group defaultLayout={defaultLayout} onLayoutChange={onLayoutChange} orientation="horizontal" style={{ width: "100%" }}>
+        <Group key={`${mountLeftPanel ? "left" : "no-left"}-${resetCount}`} defaultLayout={storedLayout} onLayoutChange={handleLayoutChange} orientation="horizontal" style={{ width: "100%" }}>
           {mountLeftPanel && (
             <>
               <Panel
@@ -188,6 +207,43 @@ export const AppLayout = ({
       <Toaster />
     </div>
   );
+};
+
+// useDefaultLayout JSON.parses stored values: invalid JSON would crash the app on every load
+const layoutStorage = {
+  getItem: (key: string) => {
+    try {
+      const value = localStorage.getItem(key);
+      if (value !== null) JSON.parse(value);
+      return value;
+    } catch {
+      return null;
+    }
+  },
+  setItem: (key: string, value: string) => localStorage.setItem(key, value),
+};
+
+const PANEL_IDS_WITH_LEFT = ["panel-main-left", "panel-main-right"];
+const PANEL_IDS_RIGHT_ONLY = ["panel-main-right"];
+const MAX_GROUP_RESETS = 3;
+const MAX_LEFT_PERCENT = 40;
+
+// The library reports a layout in the order the panels registered in.
+const hasPanelOrder = (layout: Layout, panelIds: string[]) =>
+  Object.keys(layout).join() === panelIds.join();
+
+// A stored layout with a sidebar above its maximum is dropped, so the panels start from their defaults. Other out-of-range sizes are fine: the library clamps them.
+const isLayoutPlausible = (layout: Layout | undefined, panelIds: string[]) => {
+  if (layout === undefined) return true;
+  if (typeof layout !== "object" || layout === null) return false;
+  if (!hasPanelOrder(layout, panelIds)) return false;
+  const values = Object.values(layout);
+  if (!values.every((value) => Number.isFinite(value) && value >= 0)) return false;
+  const total = values.reduce((sum, value) => sum + value, 0);
+  if (Math.abs(total - 100) > 1) return false;
+  const left = layout["panel-main-left"];
+  // 1 point of slack for rounding
+  return left === undefined || left <= MAX_LEFT_PERCENT + 1;
 };
 
 const calculateDefaultSize = (targetWidth: number, isDesktop: boolean) => {
